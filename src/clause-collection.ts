@@ -1,5 +1,6 @@
+import join from 'lodash-es/join';
+import map from 'lodash-es/map';
 import { Clause } from './clause';
-import { join, map } from 'lodash';
 
 export class ClauseCollection extends Clause {
   protected clauses: Clause[] = [];

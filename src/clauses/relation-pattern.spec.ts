@@ -1,5 +1,6 @@
+import keys from 'lodash-es/keys';
+import values from 'lodash-es/values';
 import { RelationPattern } from './relation-pattern';
-import { keys, values } from 'lodash';
 import { expect } from '../../test-setup';
 
 describe('Relation', () => {

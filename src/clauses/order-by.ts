@@ -1,5 +1,10 @@
+import join from 'lodash-es/join';
+import map from 'lodash-es/map';
+import isString from 'lodash-es/isString';
+import isArray from 'lodash-es/isArray';
+import trim from 'lodash-es/trim';
+import { Dictionary } from 'lodash';
 import { Clause } from '../clause';
-import { join, map, isString, isArray, Dictionary, trim } from 'lodash';
 
 export type Direction = boolean
   | 'DESC'

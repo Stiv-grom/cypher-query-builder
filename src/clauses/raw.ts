@@ -1,15 +1,12 @@
+import isString from 'lodash-es/isString';
+import isArray from 'lodash-es/isArray';
+import isObjectLike from 'lodash-es/isObjectLike';
+import map from 'lodash-es/map';
+import join from 'lodash-es/join';
+import flatten from 'lodash-es/flatten';
+import zip from 'lodash-es/zip';
+import isNil from 'lodash-es/isNil';
 import { Clause } from '../clause';
-import {
-  Dictionary,
-  isString,
-  isArray,
-  isObjectLike,
-  map,
-  join,
-  flatten,
-  zip,
-  isNil,
-} from 'lodash';
 
 export class Raw extends Clause {
   clause: string;

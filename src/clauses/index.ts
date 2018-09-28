@@ -6,7 +6,7 @@ export { With } from './with';
 export { Unwind } from './unwind';
 export { Delete } from './delete';
 export { Set } from './set';
-export { RelationPattern, RelationDirection } from './relation-pattern';
+export { RelationPattern } from './relation-pattern';
 export { Match } from './match';
 export { Return } from './return';
 export { Skip } from './skip';

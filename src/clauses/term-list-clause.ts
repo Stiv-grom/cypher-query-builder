@@ -1,8 +1,13 @@
+import join from 'lodash-es/join';
+import flattenDeep from 'lodash-es/flattenDeep';
+import map from 'lodash-es/map';
+import isPlainObject from 'lodash-es/isPlainObject';
+import isString from 'lodash-es/isString';
+import isArray from 'lodash-es/isArray';
+import castArray from 'lodash-es/castArray';
+import reduce from 'lodash-es/reduce';
+import { Dictionary, Many } from 'lodash';
 import { Clause } from '../clause';
-import {
-  join, flattenDeep, map, isPlainObject, isString, isArray, castArray, reduce,
-  Dictionary, Many,
-} from 'lodash';
 
 export type Properties = (string | Dictionary<string>)[];
 export type Term

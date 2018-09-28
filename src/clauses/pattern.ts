@@ -1,8 +1,14 @@
+import mapValues from 'lodash-es/mapValues';
+import join from 'lodash-es/join';
+import map from 'lodash-es/map';
+import isEmpty from 'lodash-es/isEmpty';
+import castArray from 'lodash-es/castArray';
+import isObjectLike from 'lodash-es/isObjectLike';
+import isNil from 'lodash-es/isNil';
+import isArray from 'lodash-es/isArray';
+import isString from 'lodash-es/isString';
+import { Dictionary, Many } from 'lodash';
 import { Clause } from '../clause';
-import {
-  mapValues, join, map, isEmpty, Dictionary, isArray, isString,
-  castArray, isObjectLike, isNil, Many,
-} from 'lodash';
 import { Parameter } from '../parameter-bag';
 import { stringifyLabels } from '../utils';
 

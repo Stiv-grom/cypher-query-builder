@@ -1,6 +1,7 @@
+import keys from 'lodash-es/keys';
+import values from 'lodash-es/values';
 import { expect } from '../test-setup';
 import { ParameterBag } from './parameter-bag';
-import { keys, values } from 'lodash';
 
 describe('ParameterBag', () => {
   let parameterBag;

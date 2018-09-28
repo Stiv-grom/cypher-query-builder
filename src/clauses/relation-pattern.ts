@@ -1,5 +1,11 @@
+import trim from 'lodash-es/trim';
+import join from 'lodash-es/join';
+import isNil from 'lodash-es/isNil';
+import isNumber from 'lodash-es/isNumber';
+import isArray from 'lodash-es/isArray';
+import every from 'lodash-es/every';
+import { Dictionary, Many } from 'lodash';
 import { Pattern } from './pattern';
-import { Dictionary, trim, Many, join, isNil, isNumber, isArray, every } from 'lodash';
 import { PathLength, stringifyPathLength } from '../utils';
 
 const isPathLengthArray = value => (

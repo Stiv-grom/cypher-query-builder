@@ -1,17 +1,14 @@
-import {
-  camelCase,
-  castArray,
-  isArray,
-  isBoolean,
-  isNumber,
-  isObject,
-  isString,
-  join,
-  map,
-  reduce,
-  isNil,
-} from 'lodash';
-
+import camelCase from 'lodash-es/camelCase';
+import castArray from 'lodash-es/castArray';
+import isArray from 'lodash-es/isArray';
+import isBoolean from 'lodash-es/isBoolean';
+import isNumber from 'lodash-es/isNumber';
+import isObject from 'lodash-es/isObject';
+import isString from 'lodash-es/isString';
+import join from 'lodash-es/join';
+import map from 'lodash-es/map';
+import reduce from 'lodash-es/reduce';
+import isNil from 'lodash-es/isNil';
 
 /**
  * Converts a string to camel case and ensures it is unique in the provided

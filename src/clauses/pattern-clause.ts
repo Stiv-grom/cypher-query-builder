@@ -1,5 +1,10 @@
+import join from 'lodash-es/join';
+import reduce from 'lodash-es/reduce';
+import map from 'lodash-es/map';
+import assign from 'lodash-es/assign';
+import castArray from 'lodash-es/castArray';
+import isArray from 'lodash-es/isArray';
 import { Clause } from '../clause';
-import { join, reduce, map, assign, castArray, isArray } from 'lodash';
 import { Pattern } from './pattern';
 
 export interface PatternOptions {
@@ -23,7 +28,7 @@ export class PatternClause extends Clause {
 
     // Ensure patterns is a two dimensional array.
     const arr = castArray<Pattern | Pattern[]>(patterns);
-    this.patterns = (arr[0] instanceof Array ? arr : [arr]) as Pattern[][];
+    this.patterns = (isArray(arr[0]) ? arr : [arr]) as Pattern[][];
 
 
     // Add child patterns as clauses

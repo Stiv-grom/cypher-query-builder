@@ -1,9 +1,10 @@
+import each from 'lodash-es/each';
+import { Dictionary } from 'lodash';
+import { spy, stub } from 'sinon';
 import { Query } from './query';
 import { expect } from '../test-setup';
-import { Dictionary, each } from 'lodash';
 import { node, NodePattern } from './clauses';
 import { mockConnection } from '../tests/connection.mock';
-import { spy, stub } from 'sinon';
 import { ClauseCollection } from './clause-collection';
 
 describe('Query', () => {

@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { NodePattern } from './node-pattern';
-import { keys, values } from 'lodash';
+import keys from 'lodash-es/keys';
+import values from 'lodash-es/values';
 
 describe('Node', () => {
   describe('#build', () => {

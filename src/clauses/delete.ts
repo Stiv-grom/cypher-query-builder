@@ -1,5 +1,7 @@
+import join from 'lodash-es/join';
+import castArray from 'lodash-es/castArray';
+import { Many } from 'lodash';
 import { Clause } from '../clause';
-import { join, Many, castArray } from 'lodash';
 
 export interface DeleteOptions {
   detach?: boolean;

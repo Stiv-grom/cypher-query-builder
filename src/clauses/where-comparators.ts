@@ -1,6 +1,8 @@
-import { join, Many, last, split, capitalize } from 'lodash';
+import join from 'lodash-es/join';
+import last from 'lodash-es/last';
+import split from 'lodash-es/split';
+import capitalize from 'lodash-es/capitalize';
 import { ParameterBag } from '../parameter-bag';
-import { combineAnd } from './where-utils';
 
 export const comparisions = {
   equals,

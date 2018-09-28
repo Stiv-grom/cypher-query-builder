@@ -1,5 +1,8 @@
+import map from 'lodash-es/map';
+import mapValues from 'lodash-es/mapValues';
+import isArray from 'lodash-es/isArray';
+import { Dictionary } from 'lodash';
 import { v1 as neo4j } from 'neo4j-driver';
-import { Dictionary, map, mapValues, isArray } from 'lodash';
 import { Record, Integer } from 'neo4j-driver/types/v1';
 
 export type NeoValue = string | boolean | null | number | Integer;

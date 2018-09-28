@@ -1,17 +1,13 @@
-import {
-  Dictionary,
-  isPlainObject,
-  Many,
-  isArray,
-  join,
-  map,
-  split,
-  last,
-  keys,
-  isFunction,
-} from 'lodash';
+import isPlainObject from 'lodash-es/isPlainObject';
+import isArray from 'lodash-es/isArray';
+import join from 'lodash-es/join';
+import map from 'lodash-es/map';
+import split from 'lodash-es/split';
+import last from 'lodash-es/last';
+import keys from 'lodash-es/keys';
+import isFunction from 'lodash-es/isFunction';
+import { Dictionary, Many } from 'lodash';
 import { ParameterBag } from '../parameter-bag';
-import { WhereOp } from './where-operators';
 import { Comparator } from './where-comparators';
 
 export type Condition = any | Comparator;
@@ -27,6 +23,10 @@ export const enum Precedence {
   Xor,
   And,
   Not,
+}
+
+export abstract class WhereOp {
+  abstract evaluate(params: ParameterBag, precedence?: Precedence, name?: string): string;
 }
 
 export function stringifyCondition(

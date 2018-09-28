@@ -1,4 +1,5 @@
-import { Dictionary, Many, assign } from 'lodash';
+import assign from 'lodash-es/assign';
+import { Dictionary, Many } from 'lodash';
 import {
   Limit, Match, NodePattern, Skip, Where, Set, Create,
   Return, With, Unwind, Delete, Raw, OrderBy, Merge, OnCreate, OnMatch,

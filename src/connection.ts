@@ -7,7 +7,8 @@ import { Clause } from './clause';
 import { Observable, Observer } from 'rxjs';
 import { TeardownLogic } from 'rxjs/Subscription';
 import nodeCleanup = require('node-cleanup');
-import { Dictionary, isFunction } from 'lodash';
+import { Dictionary } from 'lodash';
+import isFunction from 'lodash-es/isFunction';
 
 let connections: Connection[] = [];
 
