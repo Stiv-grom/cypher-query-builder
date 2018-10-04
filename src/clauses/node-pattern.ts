@@ -1,4 +1,4 @@
-import trim from 'lodash-es/trim';
+import trim from 'lodash/trim';
 import { Dictionary, Many } from 'lodash';
 import { Pattern } from './pattern';
 

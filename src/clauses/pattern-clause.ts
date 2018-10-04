@@ -1,9 +1,9 @@
-import join from 'lodash-es/join';
-import reduce from 'lodash-es/reduce';
-import map from 'lodash-es/map';
-import assign from 'lodash-es/assign';
-import castArray from 'lodash-es/castArray';
-import isArray from 'lodash-es/isArray';
+import join from 'lodash/join';
+import reduce from 'lodash/reduce';
+import map from 'lodash/map';
+import assign from 'lodash/assign';
+import castArray from 'lodash/castArray';
+import isArray from 'lodash/isArray';
 import { Clause } from '../clause';
 import { Pattern } from './pattern';
 

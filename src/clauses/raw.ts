@@ -1,11 +1,11 @@
-import isString from 'lodash-es/isString';
-import isArray from 'lodash-es/isArray';
-import isObjectLike from 'lodash-es/isObjectLike';
-import map from 'lodash-es/map';
-import join from 'lodash-es/join';
-import flatten from 'lodash-es/flatten';
-import zip from 'lodash-es/zip';
-import isNil from 'lodash-es/isNil';
+import isString from 'lodash/isString';
+import isArray from 'lodash/isArray';
+import isObjectLike from 'lodash/isObjectLike';
+import map from 'lodash/map';
+import join from 'lodash/join';
+import flatten from 'lodash/flatten';
+import zip from 'lodash/zip';
+import isNil from 'lodash/isNil';
 import { Clause } from '../clause';
 
 export class Raw extends Clause {

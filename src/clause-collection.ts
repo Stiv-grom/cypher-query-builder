@@ -1,5 +1,5 @@
-import join from 'lodash-es/join';
-import map from 'lodash-es/map';
+import join from 'lodash/join';
+import map from 'lodash/map';
 import { Clause } from './clause';
 
 export class ClauseCollection extends Clause {

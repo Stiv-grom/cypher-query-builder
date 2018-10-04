@@ -1,7 +1,7 @@
-import join from 'lodash-es/join';
-import last from 'lodash-es/last';
-import split from 'lodash-es/split';
-import capitalize from 'lodash-es/capitalize';
+import join from 'lodash/join';
+import last from 'lodash/last';
+import split from 'lodash/split';
+import capitalize from 'lodash/capitalize';
 import { ParameterBag } from '../parameter-bag';
 
 export const comparisions = {

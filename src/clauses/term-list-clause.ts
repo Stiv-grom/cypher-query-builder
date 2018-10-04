@@ -1,11 +1,11 @@
-import join from 'lodash-es/join';
-import flattenDeep from 'lodash-es/flattenDeep';
-import map from 'lodash-es/map';
-import isPlainObject from 'lodash-es/isPlainObject';
-import isString from 'lodash-es/isString';
-import isArray from 'lodash-es/isArray';
-import castArray from 'lodash-es/castArray';
-import reduce from 'lodash-es/reduce';
+import join from 'lodash/join';
+import flattenDeep from 'lodash/flattenDeep';
+import map from 'lodash/map';
+import isPlainObject from 'lodash/isPlainObject';
+import isString from 'lodash/isString';
+import isArray from 'lodash/isArray';
+import castArray from 'lodash/castArray';
+import reduce from 'lodash/reduce';
 import { Dictionary, Many } from 'lodash';
 import { Clause } from '../clause';
 

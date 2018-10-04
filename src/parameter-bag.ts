@@ -1,5 +1,5 @@
-import keys from 'lodash-es/keys';
-import mapValues from 'lodash-es/mapValues';
+import keys from 'lodash/keys';
+import mapValues from 'lodash/mapValues';
 import { Dictionary } from 'lodash';
 import { uniqueString } from './utils';
 

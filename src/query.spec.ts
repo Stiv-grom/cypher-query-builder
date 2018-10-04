@@ -1,4 +1,4 @@
-import each from 'lodash-es/each';
+import each from 'lodash/each';
 import { Dictionary } from 'lodash';
 import { spy, stub } from 'sinon';
 import { Query } from './query';

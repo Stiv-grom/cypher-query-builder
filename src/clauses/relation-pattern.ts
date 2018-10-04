@@ -1,9 +1,9 @@
-import trim from 'lodash-es/trim';
-import join from 'lodash-es/join';
-import isNil from 'lodash-es/isNil';
-import isNumber from 'lodash-es/isNumber';
-import isArray from 'lodash-es/isArray';
-import every from 'lodash-es/every';
+import trim from 'lodash/trim';
+import join from 'lodash/join';
+import isNil from 'lodash/isNil';
+import isNumber from 'lodash/isNumber';
+import isArray from 'lodash/isArray';
+import every from 'lodash/every';
 import { Dictionary, Many } from 'lodash';
 import { Pattern } from './pattern';
 import { PathLength, stringifyPathLength } from '../utils';

@@ -1,8 +1,8 @@
-import join from 'lodash-es/join';
-import map from 'lodash-es/map';
-import isString from 'lodash-es/isString';
-import isArray from 'lodash-es/isArray';
-import trim from 'lodash-es/trim';
+import join from 'lodash/join';
+import map from 'lodash/map';
+import isString from 'lodash/isString';
+import isArray from 'lodash/isArray';
+import trim from 'lodash/trim';
 import { Dictionary } from 'lodash';
 import { Clause } from '../clause';
 

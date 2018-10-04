@@ -1,6 +1,6 @@
-import map from 'lodash-es/map';
-import mapValues from 'lodash-es/mapValues';
-import isArray from 'lodash-es/isArray';
+import map from 'lodash/map';
+import mapValues from 'lodash/mapValues';
+import isArray from 'lodash/isArray';
 import { Dictionary } from 'lodash';
 import { v1 as neo4j } from 'neo4j-driver';
 import { Record, Integer } from 'neo4j-driver/types/v1';

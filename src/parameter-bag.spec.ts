@@ -1,5 +1,5 @@
-import keys from 'lodash-es/keys';
-import values from 'lodash-es/values';
+import keys from 'lodash/keys';
+import values from 'lodash/values';
 import { expect } from '../test-setup';
 import { ParameterBag } from './parameter-bag';
 

@@ -1,4 +1,4 @@
-import assign from 'lodash-es/assign';
+import assign from 'lodash/assign';
 import { Dictionary, Many } from 'lodash';
 import {
   Limit, Match, NodePattern, Skip, Where, Set, Create,

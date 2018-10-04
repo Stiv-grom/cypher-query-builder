@@ -1,9 +1,9 @@
-import join from 'lodash-es/join';
-import concat from 'lodash-es/concat';
-import map from 'lodash-es/map';
-import mapValues from 'lodash-es/mapValues';
-import castArray from 'lodash-es/castArray';
-import isObject from 'lodash-es/isObject';
+import join from 'lodash/join';
+import concat from 'lodash/concat';
+import map from 'lodash/map';
+import mapValues from 'lodash/mapValues';
+import castArray from 'lodash/castArray';
+import isObject from 'lodash/isObject';
 import { Dictionary, Many } from 'lodash';
 import { Clause } from '../clause';
 import { stringifyLabels } from '../utils';
