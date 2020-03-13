@@ -1,8 +1,15 @@
-import { Clause } from '../clause';
 import {
-  join, flattenDeep, map, isPlainObject, isString, isArray, castArray, reduce,
-  Dictionary, Many,
+  flatMapDeep,
+  map,
+  isPlainObject,
+  isString,
+  isArray,
+  castArray,
+  reduce,
+  Dictionary,
+  Many,
 } from 'lodash';
+import { Clause } from '../clause';
 
 export type Properties = (string | Dictionary<string>)[];
 export type Term
@@ -28,7 +35,7 @@ export class TermListClause extends Clause {
   }
 
   toString() {
-    return join(flattenDeep(map(this.terms, term => this.stringifyTerm(term))), ', ');
+    return flatMapDeep(this.terms, term => this.stringifyTerm(term)).join(', ');
   }
 
   private stringifyTerm(term: Term): Many<string> {
@@ -46,12 +53,14 @@ export class TermListClause extends Clause {
     if (isPlainObject(term)) {
       return this.stringifyDictionary(term);
     }
+
+    return '';
   }
 
   private stringifyProperty(prop: string, alias?: string, node?: string): string {
-    let prefix = node ? node + '.' : '';
+    let prefix = node ? `${node}.` : '';
     if (alias) {
-      prefix += alias + ' AS ';
+      prefix += `${alias} AS `;
     }
     return prefix + prop;
   }
@@ -71,17 +80,20 @@ export class TermListClause extends Clause {
   }
 
   private stringifyDictionary(node: Dictionary<string | Properties>): string[] {
-    const convertToString = (list, prop, key) => {
-      if (isString(prop)) {
-        // Alias
-        list.push(this.stringifyProperty(prop, key));
-      } else {
-        // Node with properties
-        list.push(...this.stringifyProperties(prop, null, key));
-      }
-      return list;
-    };
-    return reduce(node, convertToString, []);
+    return reduce(
+      node,
+      (list, prop, key) => {
+        if (isString(prop)) {
+          // Alias
+          list.push(this.stringifyProperty(prop, key));
+        } else {
+          // Node with properties
+          list.push(...this.stringifyProperties(prop, undefined, key));
+        }
+        return list;
+      },
+      [] as string[],
+    );
   }
 
   build() {

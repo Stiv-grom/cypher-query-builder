@@ -1,5 +1,11 @@
 import { stringifyValue } from './utils';
 import { ParameterContainer } from './parameter-container';
+import { Dictionary } from 'lodash';
+
+export type QueryObject = {
+  query: string;
+  params: Dictionary<any>
+};
 
 export abstract class Clause extends ParameterContainer {
   /**
@@ -12,7 +18,7 @@ export abstract class Clause extends ParameterContainer {
    * Turns the clause into a query string.
    * @return {string} Partial query string.
    */
-  toString() {
+  toString(): string {
     return this.build();
   }
 
@@ -20,7 +26,7 @@ export abstract class Clause extends ParameterContainer {
    * Turns the clause into a query object.
    * @return {object} Query object with two parameters: query and params.
    */
-  buildQueryObject() {
+  buildQueryObject(): QueryObject {
     return {
       query: this.build(),
       params: this.getParams(),
@@ -32,7 +38,7 @@ export abstract class Clause extends ParameterContainer {
    * interpolated into the string. For debugging purposes only.
    * @return {string}
    */
-  interpolate() {
+  interpolate(): string {
     let query = this.build();
     const params = this.getParams();
     for (const name in params) {

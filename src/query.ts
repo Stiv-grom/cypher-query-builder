@@ -1,10 +1,13 @@
-import { Connection } from './connection';
+// tslint:disable-next-line import-name
+import AnyPromise from 'any-promise';
+// tslint:disable-next-line import-name
+import Observable from 'any-observable';
+import { Observable as RxObservable } from 'rxjs';
+import { Dictionary } from 'lodash';
+import { Connection, Observer } from './connection';
 import { Builder } from './builder';
 import { ClauseCollection } from './clause-collection';
-import { Clause } from './clause';
-import { Observable } from 'rxjs';
-import { Dictionary } from 'lodash';
-import * as Promise from 'any-promise';
+import { Clause, QueryObject } from './clause';
 
 export class Query extends Builder<Query> {
   protected clauses = new ClauseCollection();
@@ -14,7 +17,7 @@ export class Query extends Builder<Query> {
    *
    * @param {Connection} connection
    */
-  constructor(protected connection: Connection = null) {
+  constructor(protected connection: Connection | null = null) {
     super();
   }
 
@@ -74,16 +77,12 @@ export class Query extends Builder<Query> {
    */
   run<R = any>(): Promise<Dictionary<R>[]> {
     if (!this.connection) {
-      return Promise.reject(Error('Cannot run query; no connection object available.'));
+      return AnyPromise.reject(
+        new Error('Cannot run query; no connection object available.'),
+      ) as Promise<Dictionary<R>[]>;
     }
 
-    // connection.run can throw errors synchronously. This is highly inconsistent and will be
-    // fixed in the future, but for now we need to catch synchronous errors and reject them.
-    try {
-      return this.connection.run<R>(this);
-    } catch (error) {
-      return Promise.reject(error);
-    }
+    return this.connection.run<R>(this);
   }
 
   /**
@@ -132,9 +131,11 @@ export class Query extends Builder<Query> {
    * Throws an exception if this query does not have a connection or has no
    * clauses.
    */
-  stream<R = any>(): Observable<Dictionary<R>> {
+  stream<R = any>(): RxObservable<Dictionary<R>> {
     if (!this.connection) {
-      throw Error('Cannot run query; no connection object available.');
+      return new Observable((subscriber: Observer<Dictionary<R>>): void => {
+        subscriber.error(new Error('Cannot run query; no connection object available.'));
+      });
     }
 
     return this.connection.stream<R>(this);
@@ -155,7 +156,7 @@ export class Query extends Builder<Query> {
    * the return value which is `Dictionary<R>`. Note that this function returns
    * `undefined` if the result set was empty.
    */
-  first<R = any>(): Promise<Dictionary<R>> {
+  first<R = any>(): Promise<Dictionary<R> | undefined> {
     return this.run<R>().then(results => results && results.length > 0 ? results[0] : undefined);
   }
 
@@ -180,7 +181,7 @@ export class Query extends Builder<Query> {
    *
    * @returns {string}
    */
-  build() {
+  build(): string {
     return this.clauses.build();
   }
 
@@ -188,7 +189,7 @@ export class Query extends Builder<Query> {
    * Synonym for `build()`.
    * @returns {string}
    */
-  toString() {
+  toString(): string {
     return this.clauses.toString();
   }
 
@@ -196,7 +197,7 @@ export class Query extends Builder<Query> {
    * Returns an object that includes both the query and the params ready to be
    * passed to the neo4j driver.
    */
-  buildQueryObject() {
+  buildQueryObject(): QueryObject {
     return this.clauses.buildQueryObject();
   }
 
@@ -220,7 +221,7 @@ export class Query extends Builder<Query> {
    *
    * @returns {string}
    */
-  interpolate() {
+  interpolate(): string {
     return this.clauses.interpolate();
   }
 
@@ -228,7 +229,7 @@ export class Query extends Builder<Query> {
    * Returns an array of all the clauses in this query.
    * @returns {Clause[]}
    */
-  getClauses() {
+  getClauses(): Clause[] {
     return this.clauses.getClauses();
   }
 
@@ -239,7 +240,7 @@ export class Query extends Builder<Query> {
    * @param {Clause} clause
    * @returns {this}
    */
-  addClause(clause: Clause) {
+  addClause(clause: Clause): this {
     this.clauses.addClause(clause);
     return this;
   }

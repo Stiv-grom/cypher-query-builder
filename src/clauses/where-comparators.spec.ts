@@ -1,20 +1,21 @@
+import { Dictionary } from 'lodash';
 import { expect } from 'chai';
 import {
-  between,
+  between, Comparator,
   contains, endsWith, equals, exists, greaterEqualTo, greaterThan, hasLabel,
   inArray,
   isNull, lessEqualTo, lessThan, regexp, startsWith,
 } from './where-comparators';
 import { ParameterBag } from '../parameter-bag';
 
-
 describe('Where Comparators', () => {
   let bag: ParameterBag;
+
   beforeEach(() => {
     bag = new ParameterBag();
   });
 
-  const simpleOperators = {
+  const simpleOperators: Dictionary<(value: any, variable?: boolean) => Comparator> = {
     equals,
     greaterThan,
     greaterEqualTo,
@@ -25,7 +26,8 @@ describe('Where Comparators', () => {
     contains,
     inArray,
   };
-  const opSymbols = {
+
+  const opSymbols: Dictionary<string> = {
     equals: '=',
     greaterThan: '>',
     greaterEqualTo: '>=',
@@ -41,14 +43,14 @@ describe('Where Comparators', () => {
     describe(name, () => {
       it('should perform a comparision', () => {
         const clause = simpleOperators[name]('value')(bag, 'name');
-        expect(clause).to.equal('name ' + opSymbols[name] + ' $name');
+        expect(clause).to.equal(`name ${opSymbols[name]} $name`);
         expect(bag.getParams()).to.have.property('name')
           .that.equals('value');
       });
 
       it('should support using a cypher variable', () => {
         const clause = simpleOperators[name]('variable', true)(bag, 'name');
-        expect(clause).to.equal('name ' + opSymbols[name] + ' variable');
+        expect(clause).to.equal(`name ${opSymbols[name]} variable`);
         expect(bag.getParams()).to.be.empty;
       });
     });

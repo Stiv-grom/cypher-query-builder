@@ -2,7 +2,9 @@ import { Dictionary, Many, assign } from 'lodash';
 import {
   Limit, Match, NodePattern, Skip, Where, Set, Create,
   Return, With, Unwind, Delete, Raw, OrderBy, Merge, OnCreate, OnMatch,
+  Remove,
 } from './clauses';
+import { CreateOptions } from './clauses/create';
 import { DeleteOptions } from './clauses/delete';
 import { MatchOptions } from './clauses/match';
 import { Direction, OrderConstraint, OrderConstraints } from './clauses/order-by';
@@ -11,12 +13,15 @@ import { SetOptions, SetProperties } from './clauses/set';
 import { Term } from './clauses/term-list-clause';
 import { AnyConditions } from './clauses/where-utils';
 import { Clause } from './clause';
+import { RemoveProperties } from './clauses/remove';
+import { Union } from './clauses/union';
+import { ReturnOptions } from './clauses/return';
 
 /**
  * @internal
  */
 export interface WrapperClause {
-  new (clause: Clause): Clause;
+  new (clause: Set): Clause;
 }
 
 /**
@@ -114,16 +119,17 @@ export class SetBlock<Q> {
    * `setValues` accepts a dictionary where the keys are nodes or property names
    * to be updated.
    *
-   * `setValues` and `setVariables` by default set override to false meaning
-   * that the `+=` operator will be used to merge values. You can set override
-   * to `true` to use the `=` operator instead.
-   *
-   * @param {_.Dictionary<any>} values
-   * @param {boolean} override
-   * @returns {Q}
+   * To use the `+=` operator to merge properties of a node, you can pass
+   * `true` to the merge option.
+   * ```
+   * query.setValues({
+   *   'sale': { active: true },
+   * }, true)
+   * // SET sale += $sale
+   * ```
    */
-  setValues(values: Dictionary<any>, override?: boolean) {
-    return this.chain(this.wrap(new Set({ values }, { override })));
+  setValues(values: Dictionary<any>, merge?: boolean) {
+    return this.chain(this.wrap(new Set({ values }, { merge })));
   }
 
   /**
@@ -137,23 +143,24 @@ export class SetBlock<Q> {
    * query.setVariables({
    *   'sale.activatedAt': 'timestamp()',
    * })
-   * // SET sale.activatedAt += timestamp()
+   * // SET sale.activatedAt = timestamp()
    * ```
    * Note how values are inserted into the query, as is.
    *
-   * `setValues` and `setVariables` by default set override to false meaning
-   * that the `+=` operator will be used to merge values. You can set override
-   * to `true` to use the `=` operator instead.
-   *
-   * @param {_.Dictionary<string | _.Dictionary<string>>} variables
-   * @param {boolean} override
-   * @returns {Q}
+   * To use the `+=` operator to merge properties of a node, you can pass
+   * `true` to the merge option.
+   * ```
+   * query.setVariables({
+   *   'sale': 'newSaleDetails'
+   * }, true)
+   * // SET sale += newSaleDetails
+   * ```
    */
-  setVariables(variables: Dictionary<string | Dictionary<string>>, override?: boolean) {
-    return this.chain(this.wrap(new Set({ variables }, { override })));
+  setVariables(variables: Dictionary<string | Dictionary<string>>, merge?: boolean) {
+    return this.chain(this.wrap(new Set({ variables }, { merge })));
   }
 
-  private wrap(clause: Clause): Clause {
+  private wrap(clause: Set): Clause {
     return this.wrapper ? new this.wrapper(clause) : clause;
   }
 }
@@ -234,29 +241,47 @@ export abstract class Builder<Q> extends SetBlock<Q> {
    * CREATE (people:Person { age: 30 })-[:FriendsWith]->(friend:Friend)
    * ```
    *
-   * @param {PatternCollection} patterns
-   * @returns {Q}
+   * The create method also accepts a `unique` option which will cause a `CREATE UNIQUE` clause to
+   * be emitted instead.
+   * ```javascript
+   * query.create([node('people', 'Person', { age: 30 })], { unique: true });
+   * // CREATE UNIQUE (people:Person { age: 30 })
+   * ```
    */
-  create(patterns: PatternCollection) {
-    return this.continueChainClause(new Create(patterns));
+  create(patterns: PatternCollection, options?: CreateOptions) {
+    return this.continueChainClause(new Create(patterns, options));
   }
 
   /**
-   * Shorthand for `create(node(name, labels, conditions))`. For more details
+   * Shorthand for `create(patterns, { unique: true })`
+   */
+  createUnique(patterns: PatternCollection) {
+    return this.create(patterns, { unique: true });
+  }
+
+  /**
+   * Shorthand for `create(node(name, labels, conditions), options)`. For more details
    * the arguments see @{link node}.
-   *
-   * @param {_.Many<string> | _.Dictionary<any>} name
-   * @param {_.Many<string> | _.Dictionary<any>} labels
-   * @param {_.Dictionary<any>} conditions
-   * @returns {Q}
    */
   createNode(
-    name?: Many<string> | Dictionary<any>,
+    name: Many<string> | Dictionary<any>,
+    labels?: Many<string> | Dictionary<any>,
+    conditions?: Dictionary<any>,
+    options?: CreateOptions,
+  ) {
+    const clause = new Create(new NodePattern(name, labels, conditions), options);
+    return this.continueChainClause(clause);
+  }
+
+  /**
+   * Shorthand for `createNode(name, labels, conditions, { unique: true })`
+   */
+  createUniqueNode(
+    name: Many<string> | Dictionary<any>,
     labels?: Many<string> | Dictionary<any>,
     conditions?: Dictionary<any>,
   ) {
-    const clause = new Create(new NodePattern(name, labels, conditions));
-    return this.continueChainClause(clause);
+    return this.createNode(name, labels, conditions, { unique: true });
   }
 
   /**
@@ -264,7 +289,9 @@ export abstract class Builder<Q> extends SetBlock<Q> {
    * clause to the query.
    *
    * Delete accepts a single string or an array of them and all of them are
-   * joined together with commas.
+   * joined together with commas. *Note that these strings are not escaped or
+   * passed to Neo4j using parameters, therefore you should not pass user
+   * input into this clause without escaping it first*.
    *
    * You can set `detach: true` in the options to make it a `DETACH DELETE`
    * clause.
@@ -297,7 +324,7 @@ export abstract class Builder<Q> extends SetBlock<Q> {
    * @param {string | number} amount
    * @returns {Q}
    */
-  limit(amount: string | number) {
+  limit(amount: number) {
     return this.continueChainClause(new Limit(amount));
   }
 
@@ -342,7 +369,6 @@ export abstract class Builder<Q> extends SetBlock<Q> {
   match(patterns: PatternCollection, options?: MatchOptions) {
     return this.continueChainClause(new Match(patterns, options));
   }
-
 
   /**
    * Shorthand for `match(node(name, labels, conditions))`. For more details on
@@ -487,6 +513,80 @@ export abstract class Builder<Q> extends SetBlock<Q> {
   }
 
   /**
+   * Adds a [remove]{@link https://neo4j.com/docs/developer-manual/current/cypher/clauses/remove/}
+   * clause to the query.
+   *
+   * Pass objects containing the list of properties and labels to remove from a node. Each key in an
+   * object is the name of a node and the values are the names of the labels and properties to
+   * remove. The values of each object can be either a single string, or an array of strings.
+   * ```javascript
+   * query.remove({
+   *   labels: {
+   *     coupon: 'Active',
+   *   },
+   *   properties: {
+   *     customer: ['inactive', 'new'],
+   *   },
+   * });
+   * // REMOVE coupon:Active, customer.inactive, customer.new
+   * ```
+   *
+   * Both labels and properties objects are optional, but you must provide at least one of them for
+   * the query to be syntatically valid.
+   * ```
+   * query.remove({
+   *
+   * });
+   * // Invalid query:
+   * // REMOVE
+   * ```
+   *
+   * If you only need to remove labels *or* properties, you may find `removeProperties` or
+   * `removeLabels` more convenient.
+   */
+  remove(properties: RemoveProperties) {
+    return this.continueChainClause(new Remove(properties));
+  }
+
+  /**
+   * Adds a [remove]{@link https://neo4j.com/docs/developer-manual/current/cypher/clauses/remove/}
+   * clause to the query.
+   *
+   * Pass an object containing the list of properties to remove from a node. Each key in the
+   * object is the name of a node and the values are the names of the properties to remove. The
+   * values can be either a single string, or an array of strings.
+   * ```javascript
+   * query.remove({
+   *   customer: ['inactive', 'new'],
+   *   coupon: 'available',
+   * });
+   * // REMOVE customer.inactive, customer.new, coupon.available
+   * ```
+   */
+  removeProperties(properties: Dictionary<Many<string>>) {
+    return this.continueChainClause(new Remove({ properties }));
+  }
+
+  /**
+   * Adds a [remove]{@link https://neo4j.com/docs/developer-manual/current/cypher/clauses/remove/}
+   * clause to the query.
+   *
+   * Pass an object containing the list of labels to remove from a node. Each key in the
+   * object is the name of a node and the values are the names of the labels to remove. The
+   * values can be either a single string, or an array of strings.
+   * ```javascript
+   * query.remove({
+   *   customer: ['Inactive', 'New'],
+   *   coupon: 'Available',
+   * });
+   * // REMOVE customer:Inactive, customer:New, coupon:Available
+   * ```
+   */
+  removeLabels(labels: Dictionary<Many<string>>) {
+    return this.continueChainClause(new Remove({ labels }));
+  }
+
+  /**
    * Adds a [return]{@link https://neo4j.com/docs/developer-manual/current/cypher/clauses/return}
    * clause to the query.
    *
@@ -541,11 +641,22 @@ export abstract class Builder<Q> extends SetBlock<Q> {
    *
    * You can also pass an array of any of the above methods.
    *
-   * @param {_.Many<Term>} terms
-   * @returns {Q}
+   * The return method also accepts a `distinct` option which will cause a `RETURN DISTINCT` clause
+   * to be emitted instead.
+   * ```javascript
+   * query.return('people', { distinct: true })
+   * // RETURN DISTINCT people
+   * ```
    */
-  return(terms: Many<Term>) {
-    return this.continueChainClause(new Return(terms));
+  return(terms: Many<Term>, options?: ReturnOptions) {
+    return this.continueChainClause(new Return(terms, options));
+  }
+
+  /**
+   * Shorthand for `return(terms, { distinct: true });
+   */
+  returnDistinct(terms: Many<Term>) {
+    return this.return(terms, { distinct: true });
   }
 
   /**
@@ -555,8 +666,50 @@ export abstract class Builder<Q> extends SetBlock<Q> {
    * @param {string | number} amount
    * @returns {Q}
    */
-  skip(amount: string | number) {
+  skip(amount: number) {
     return this.continueChainClause(new Skip(amount));
+  }
+
+  /**
+   * Add a [union]{@link https://neo4j.com/docs/cypher-manual/current/clauses/union/} clause to the
+   * query.
+   *
+   * ```javascript
+   * query.matchNode('people', 'People')
+   *   .return({ 'people.name': 'name' })
+   *   .union()
+   *   .matchNode('departments', 'Department')
+   *   .return({ 'departments.name': 'name' });
+   * // MATCH (people:People)
+   * // RETURN people.name AS name
+   * // UNION
+   * // MATCH (departments:Department)
+   * // RETURN departments.name AS name
+   * ```
+   */
+  union(all?: boolean) {
+    return this.continueChainClause(new Union(all));
+  }
+
+  /**
+   * Add a [union all]{@link https://neo4j.com/docs/cypher-manual/current/clauses/union/} clause to
+   * the query. Just shorthand for `union(true)`.
+   *
+   * ```javascript
+   * query.matchNode('people', 'People')
+   *   .return({ 'people.name': 'name' })
+   *   .unionAll()
+   *   .matchNode('departments', 'Department')
+   *   .return({ 'departments.name': 'name' });
+   * // MATCH (people:People)
+   * // RETURN people.name AS name
+   * // UNION ALL
+   * // MATCH (departments:Department)
+   * // RETURN departments.name AS name
+   * ```
+   */
+  unionAll() {
+    return this.continueChainClause(new Union(true));
   }
 
   /**
@@ -575,13 +728,12 @@ export abstract class Builder<Q> extends SetBlock<Q> {
    * Adds a [where]{@link https://neo4j.com/docs/developer-manual/current/cypher/clauses/where}
    * clause to the query.
    *
-   * `where` is probably the most complex clause in this package but the rule of
-   * thumb is when you see an array it becomes an `OR` and when you see a
-   * dictionary, it becomes an `AND`. The many different ways of specifying your
+   * `where` is probably the most complex clause in this package because of the flexible ways to
+   * combine conditions. A handy rule of thumb is when you see an array it becomes an `OR` and when
+   * you see a dictionary, it becomes an `AND`. The many different ways of specifying your
    * constraints are listed below.
    *
-   * As a simple object. The comparison of each property is just `AND`ed
-   * together.
+   * As a simple object, the comparison of each property is just `AND`ed together.
    * ```javascript
    * query.where({
    *   name: 'Alan',
@@ -590,14 +742,47 @@ export abstract class Builder<Q> extends SetBlock<Q> {
    * // WHERE name = 'Alan' AND age = 54
    * ```
    *
-   * Each property can also be an array, in which case each element of the array
-   * is considered a possible value of that property.
+   * You can wrap your constraints in a top level dictionary in which case the key of the outer
+   * dictionary will be considered the name of the node.
    * ```javascript
    * query.where({
-   *   name: [ 'Alan', 'Steve', 'Barry' ],
-   *   age: 54,
+   *   person: {
+   *     name: 'Alan',
+   *     age: 54,
+   *   },
    * })
-   * // WHERE (name = 'Alan' OR name = 'Steve' OR name = 'Barry') AND age = 54
+   * // WHERE person.name = 'Alan' AND person.age = 54
+   * ```
+   *
+   * Using an array, you can generate `OR`ed conditions.
+   * ```javascript
+   * query.where([
+   *   { name: 'Alan' },
+   *   { age: 54 },
+   * ])
+   * // WHERE name = 'Alan' OR age = 54
+   * ```
+   *
+   * Arrays can be placed at many levels in the conditions.
+   * ```javascript
+   * query.where({
+   *   name: [ 'Alan', 'Steve', 'Bob' ],
+   * })
+   * // WHERE name = 'Alan' OR name = 'Steve' OR name = 'Bob'
+   *
+   * query.where({
+   *   person: [
+   *     { name: 'Alan' },
+   *     { age: 54 },
+   *   ],
+   * })
+   * // WHERE person.name = 'Alan' OR person.age = 54
+   *
+   * query.where([
+   *   { employee: { name: 'Alan' } },
+   *   { department: { code: 765 } },
+   * })
+   * // WHERE employee.name = 'Alan' OR department.code = 765
    * ```
    *
    * For more complex comparisons, you can use the comparator functions such as:
@@ -608,41 +793,59 @@ export abstract class Builder<Q> extends SetBlock<Q> {
    * // WHERE age > 30
    * ```
    *
+   * The full list of comparators currently supported are:
+   *  - [between]{@link http://jamesfer.me/cypher-query-builder/globals.html#between}
+   *  - [contains]{@link http://jamesfer.me/cypher-query-builder/globals.html#contains}
+   *  - [endsWith]{@link http://jamesfer.me/cypher-query-builder/globals.html#endswith}
+   *  - [equals]{@link http://jamesfer.me/cypher-query-builder/globals.html#equals}
+   *  - [exists]{@link http://jamesfer.me/cypher-query-builder/globals.html#exists}
+   *  - [greaterEqualTo]{@link http://jamesfer.me/cypher-query-builder/globals.html#greaterequalto}
+   *  - [greaterThan]{@link http://jamesfer.me/cypher-query-builder/globals.html#greaterthan}
+   *  - [hasLabel]{@link http://jamesfer.me/cypher-query-builder/globals.html#haslabel}
+   *  - [inArray]{@link http://jamesfer.me/cypher-query-builder/globals.html#inarray}
+   *  - [isNull]{@link http://jamesfer.me/cypher-query-builder/globals.html#isnull}
+   *  - [lessEqualTo]{@link http://jamesfer.me/cypher-query-builder/globals.html#lessequalto}
+   *  - [lessThan]{@link http://jamesfer.me/cypher-query-builder/globals.html#lessthan}
+   *  - [regexp]{@link http://jamesfer.me/cypher-query-builder/globals.html#regexp}
+   *  - [startsWith]{@link http://jamesfer.me/cypher-query-builder/globals.html#startswith}
+   *
    * You can import the comparisons one at a time or all at once.
-   * ```
+   * ```javascript
    * import { greaterThan, regexp } from 'cypher-query-builder';
+   * // or
    * import { comparisons } form 'cypher-query-builder';
    * ```
    *
-   * You can wrap each of the above examples in another dictionary in which case
-   * the key of the outer dictionary will be considered the name of the node.
+   * For convenience you can also pass a Javascript RegExp object as a value,
+   * which will then be converted into a string before it is passed to cypher.
+   * *However*, beware that the cypher regexp syntax is inherited from
+   * [java]{@link
+    * https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html},
+   * and may have slight differences to the Javascript syntax. If you would
+   * prefer, you can use the `regexp` comparator and use strings instead of
+   * RegExp objects. For example, Javascript RegExp flags will not be
+   * preserved when sent to cypher.
    * ```javascript
    * query.where({
-   *   person: {
-   *     name: [ 'Alan', 'Steve', 'Barry' ],
-   *     age: 54,
-   *   },
+   *   name: /[A-Z].*son/,
    * })
-   * // WHERE
-   * //   (person.name = 'Alan' OR person.name = 'Steve' OR person.name = 'Barry')
-   * //   AND person.age = 54
+   * // WHERE age =~ '[A-Z].*son'
    * ```
-   * Finally, you can also wrap your conditions in an array at most levels to
-   * produce an `OR`
+   *
+   * All the binary operators including `xor` and `not` are available as well and can also be
+   * imported individually or all at once.
+   * ```javascript
+   * import { xor, and } from 'cypher-query-builder';
+   * // or
+   * import { operators } form 'cypher-query-builder';
+   * ```
+   *
+   * The operators can be placed at any level of the query.
    * ```javascript
    * query.where({
-   *   person: [
-   *     { name: 'Alan' },
-   *     { age: 54 },
-   *   ],
+   *   age: xor([lessThan(12), greaterThan(65)])
    * })
-   * // WHERE person.name = 'Alan' OR person.age = 54
-   *
-   * query.where([
-   *   { employee: { age: lessThan(18) }},
-   *   { department: { funding: greaterThan(10000) }}
-   * })
-   * // WHERE employee.age < 18 OR department.funding > 10000
+   * // WHERE age < 12 XOR age > 65
    * ```
    *
    * @param {AnyConditions} conditions

@@ -1,6 +1,6 @@
-import { Clause } from '../clause';
-import { join, reduce, map, assign, castArray, isArray } from 'lodash';
+import { reduce, map, assign, castArray, isArray } from 'lodash';
 import { Pattern } from './pattern';
+import { Clause } from '../clause';
 
 export interface PatternOptions {
   useExpandedConditions?: boolean;
@@ -23,8 +23,7 @@ export class PatternClause extends Clause {
 
     // Ensure patterns is a two dimensional array.
     const arr = castArray<Pattern | Pattern[]>(patterns);
-    this.patterns = (arr[0] instanceof Array ? arr : [arr]) as Pattern[][];
-
+    this.patterns = (isArray(arr[0]) ? arr : [arr]) as Pattern[][];
 
     // Add child patterns as clauses
     this.patterns.forEach(arr => arr.forEach((pat) => {
@@ -37,6 +36,6 @@ export class PatternClause extends Clause {
     const patternStrings = map(this.patterns, (pattern) => {
       return reduce(pattern, (str, clause) => str + clause.build(), '');
     });
-    return join(patternStrings, ', ');
+    return patternStrings.join(', ');
   }
 }

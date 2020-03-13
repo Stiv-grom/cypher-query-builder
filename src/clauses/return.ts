@@ -1,15 +1,17 @@
-import { TermListClause } from './term-list-clause';
+import { Many } from 'lodash';
+import { Term, TermListClause } from './term-list-clause';
+
+export interface ReturnOptions {
+  distinct?: boolean;
+}
 
 export class Return extends TermListClause {
-  /**
-   * Creates a return clause
-   * @param  {string|object|array<string|object>|} terms [description]
-   */
-  constructor(terms) {
+  constructor(terms: Many<Term>, protected options: ReturnOptions = {}) {
     super(terms);
   }
 
   build() {
-    return 'RETURN ' + super.build();
+    const distinct = this.options.distinct ? ' DISTINCT' : '';
+    return `RETURN${distinct} ${super.build()}`;
   }
 }

@@ -1,33 +1,23 @@
-import { Query } from './query';
-import { expect } from '../test-setup';
+// tslint:disable-next-line import-name
+import Observable from 'any-observable';
 import { Dictionary, each } from 'lodash';
-import { node, NodePattern } from './clauses';
-import { mockConnection } from '../tests/connection.mock';
 import { spy, stub } from 'sinon';
+import { expect } from '../test-setup';
+import { mockConnection } from '../tests/connection.mock';
 import { ClauseCollection } from './clause-collection';
+import { node, NodePattern } from './clauses';
+import { Query } from './query';
 
 describe('Query', () => {
   describe('query methods', () => {
     const methods: Dictionary<(q: Query) => Query> = {
-      matchNode: q => q.matchNode('Node'),
-      match: q => q.match(new NodePattern('Node')),
-      optionalMatch: q => q.optionalMatch(new NodePattern('Node')),
-      createNode: q => q.createNode('Node'),
       create: q => q.create(new NodePattern('Node')),
-      return: q => q.return('node'),
-      with: q => q.with('node'),
-      unwind: q => q.unwind([1, 2, 3], 'number'),
+      createNode: q => q.createNode('Node'),
       delete: q => q.delete('node'),
       detachDelete: q => q.detachDelete('node'),
-      set: q => q.set({}, { override: false }),
-      setLabels: q => q.setLabels({}),
-      setValues: q => q.setValues({}),
-      setVariables: q => q.setVariables({}, false),
-      skip: q => q.skip(1),
       limit: q => q.limit(1),
-      where: q => q.where([]),
-      orderBy: q => q.orderBy('name'),
-      raw: q => q.raw('name'),
+      match: q => q.match(new NodePattern('Node')),
+      matchNode: q => q.matchNode('Node'),
       merge: q => q.merge(node('name')),
       onCreateSet: q => q.onCreate.set({ labels: { a: 'Label' } }),
       onCreateSetLabels: q => q.onCreate.setLabels({ a: 'Label' }),
@@ -37,14 +27,28 @@ describe('Query', () => {
       onMatchSetLabels: q => q.onMatch.setLabels({ a: 'Label' }),
       onMatchSetValues: q => q.onMatch.setValues({ a: 'name' }),
       onMatchSetVariables: q => q.onMatch.setVariables({ a: 'steve' }),
+      optionalMatch: q => q.optionalMatch(new NodePattern('Node')),
+      orderBy: q => q.orderBy('name'),
+      raw: q => q.raw('name'),
+      return: q => q.return('node'),
+      set: q => q.set({}, { merge: false }),
+      setLabels: q => q.setLabels({}),
+      setValues: q => q.setValues({}),
+      setVariables: q => q.setVariables({}, false),
+      skip: q => q.skip(1),
+      union: q => q.union(),
+      unionAll: q => q.unionAll(),
+      unwind: q => q.unwind([1, 2, 3], 'number'),
+      where: q => q.where([]),
+      with: q => q.with('node'),
     };
 
     each(methods, (fn, name) => {
-      it(name + ' should return a chainable query object', () => {
+      it(`${name} should return a chainable query object`, () => {
         const query = new Query();
         expect(fn(query)).to.equal(query);
         expect(query.getClauses().length === 1);
-        expect(query.build()).to.equal(query.getClauses()[0].build() + ';');
+        expect(query.build()).to.equal(`${query.getClauses()[0].build()};`);
       });
     });
   });
@@ -66,11 +70,13 @@ describe('Query', () => {
       'getClauses',
     ];
 
-    each(methods, (method) => {
-      const methodSpy = spy(query.getClauseCollection(), method);
-      query[method]();
-      expect(methodSpy.calledOnce).to.be.true;
-      methodSpy.restore();
+    methods.forEach((method) => {
+      it(`should proxy the ${method} method to the clause collection`, () => {
+        const methodSpy = spy(query.getClauseCollection(), method);
+        (query as any)[method]();
+        expect(methodSpy.calledOnce).to.be.true;
+        methodSpy.restore();
+      });
     });
   });
 
@@ -83,7 +89,7 @@ describe('Query', () => {
     it('should run the query on its connection', () => {
       const { connection } = mockConnection();
       const runStub = stub(connection, 'run');
-      runStub.returns(Promise.resolve());
+      runStub.returns(Promise.resolve([{}]));
       const query = (new Query(connection)).raw('Query');
       return expect(query.run()).to.be.fulfilled.then(() => {
         expect(runStub.calledOnce);
@@ -92,9 +98,17 @@ describe('Query', () => {
   });
 
   describe('#stream', () => {
-    it('should throw if there is no attached connection object', () => {
-      const query = new Query();
-      expect(() => query.stream()).to.throw(Error, 'no connection object available');
+    it('should return an errored observable if there is no attached connection object', () => {
+      const observable = new Query().stream();
+      expect(observable).to.be.an.instanceOf(Observable);
+      observable.subscribe({
+        next: () => expect.fail(null, null, 'Observable should not emit anything'),
+        error(error) {
+          expect(error).to.be.instanceOf(Error);
+          expect(error.message).to.include('no connection object available');
+        },
+        complete: () => expect.fail(null, null, 'Observable should not complete successfully'),
+      });
     });
 
     it('should run the query on its connection', () => {
@@ -119,7 +133,7 @@ describe('Query', () => {
       runStub.returns(Promise.resolve([firstRecord, { number: 2 }, { number: 3 }]));
 
       const query = (new Query(connection)).raw('Query');
-      return expect(query.first()).to.be.fulfilled.then((result) => {
+      return expect(query.first()).to.be.fulfilled.then((result: any) => {
         expect(runStub.calledOnce);
         expect(result).to.equal(firstRecord);
       });
@@ -131,7 +145,7 @@ describe('Query', () => {
       runStub.returns(Promise.resolve([]));
 
       const query = (new Query(connection)).raw('Query');
-      return expect(query.first()).to.be.fulfilled.then((result) => {
+      return expect(query.first()).to.be.fulfilled.then((result: any) => {
         expect(runStub.calledOnce);
         expect(result).to.equal(undefined);
       });

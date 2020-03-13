@@ -1,14 +1,14 @@
-import { Clause } from '../clause';
 import {
-  mapValues, join, map, isEmpty, Dictionary, isArray, isString,
+  mapValues, map, isEmpty, Dictionary, isArray, isString,
   castArray, isObjectLike, isNil, Many,
 } from 'lodash';
+import { Clause } from '../clause';
 import { Parameter } from '../parameter-bag';
 import { stringifyLabels } from '../utils';
 
 export abstract class Pattern extends Clause {
-  protected useExpandedConditions: boolean;
-  protected conditionParams = {};
+  protected useExpandedConditions: boolean | undefined;
+  protected conditionParams: Dictionary<Parameter> | Parameter = {};
   protected name: string;
   protected labels: string[];
   protected conditions: Dictionary<any>;
@@ -114,9 +114,8 @@ export abstract class Pattern extends Clause {
       const strings = map(this.conditionParams, (param, name) => {
         return `${name}: ${param}`;
       });
-      return '{ ' + join(strings, ', ') + ' }';
+      return `{ ${strings.join(', ')} }`;
     }
     return this.conditionParams.toString();
   }
 }
-

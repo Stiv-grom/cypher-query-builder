@@ -1,15 +1,15 @@
+// tslint:disable-next-line import-name
+import AnyPromise from 'any-promise';
+// tslint:disable-next-line import-name
+import Observable from 'any-observable';
+import nodeCleanup from 'node-cleanup';
+import { Dictionary, isFunction } from 'lodash';
+import { AuthToken, Config, Driver, Session } from 'neo4j-driver/types/v1';
 import { Transformer } from './transformer';
 import { Query } from './query';
 import { v1 as neo4j } from 'neo4j-driver';
 import { Builder } from './builder';
-import { AuthToken, Config, Driver, Session } from 'neo4j-driver/types/v1';
 import { Clause } from './clause';
-import { Observable, Observer } from 'rxjs';
-import { TeardownLogic } from 'rxjs/Subscription';
-import nodeCleanup = require('node-cleanup');
-import { Dictionary, isFunction } from 'lodash';
-import * as Promise from 'any-promise';
-// import * as Observable from 'any-observable';
 
 let connections: Connection[] = [];
 
@@ -19,22 +19,42 @@ nodeCleanup(() => {
   connections = [];
 });
 
-export interface Credentials { username: string; password: string; }
+export interface Observer<T> {
+  closed?: boolean;
+  next: (value: T) => void;
+  error: (error: any) => void;
+  complete: () => void;
+}
+
 export type DriverConstructor = typeof neo4j.driver;
 
 export interface FullConnectionOptions {
   driverConstructor: DriverConstructor;
   driverConfig: Config;
 }
+
 export type ConnectionOptions = Partial<FullConnectionOptions>;
+
+export interface Credentials { username: string; password: string; }
 
 function isCredentials(credentials: any): credentials is Credentials {
   return 'username' in credentials && 'password' in credentials;
 }
 
+// We have to correct the type of lodash's isFunction method because it doesn't correctly narrow
+// union types such as the options parameter passed to the connection constructor.
+const isTrueFunction: (value: any) => value is Function = isFunction;
+
+// tslint:disable max-line-length
 /**
- * A connection lets you access the Neo4j server and run queries against it.
+ * The Connection class lets you access the Neo4j server and run queries against it. Under the hood,
+ * the Connection class uses the official Neo4j Nodejs driver which manages connection pooling on a
+ * [session basis]{@link https://neo4j.com/docs/api/javascript-driver/current/class/src/v1/driver.js~Driver.html#instance-method-session}.
+ * It should be enough to have a single Connection instance per database per application.
  *
+ * To create the connection, simply call the
+ * [constructor]{@link https://jamesfer.me/cypher-query-builder/classes/connection.html#constructor}
+ * and pass in the database url, username and password.
  * ```
  * const db = new Connection('bolt://localhost', {
  *   username: 'neo4j',
@@ -42,25 +62,37 @@ function isCredentials(credentials: any): credentials is Credentials {
  * })
  * ```
  *
- * Once you've finished with the connection you should close the connection.
- * ```
- * db.close()
- * ```
- *
- * The library will attempt to clean up all connections when the process exits,
- * but if you are using many connections for a short period of time you should
- * close them yourself.
- *
- * To use the connection, the chainable query builder methods will probably be
- * most useful such as `match`, `create`, `matchNode` etc etc.
- *
+ * To use the connection, just start calling any of the clause methods such as `match`, `create` or
+ * `matchNode` etc. They automatically create a {@link Query} object that you can then chain other
+ * methods off of.
  * ```
  * db.matchNode('people', 'Person')
  *   .where({ 'people.age': greaterThan(18) })
  *   .return('people')
  *   .run()
  * ```
+ *
+ * You can also pass a query to the
+ * [run]{@link https://jamesfer.me/cypher-query-builder/classes/connection.html#run} method,
+ * however, this is probably much less convenient.
+ * ```
+ * db.run(
+ *   new Query().matchNode('people', 'Person')
+ *     .where({ 'people.age': greaterThan(18) })
+ *     .return('people')
+ *     .run()
+ * );
+ * ```
+ *
+ * Once you've finished with the connection you should close the connection.
+ * ```
+ * db.close()
+ * ```
+ *
+ * The library will attempt to clean up all connections when the process exits, but it is better to
+ * be explicit.
  */
+// tslint:enable max-line-length
 export class Connection extends Builder<Query> {
   protected auth: AuthToken;
   protected driver: Driver;
@@ -98,15 +130,13 @@ export class Connection extends Builder<Query> {
       ? neo4j.auth.basic(auth.username, auth.password)
       : auth;
 
-    this.options = {
-      driverConstructor: isFunction(options) ? options
-        : options.driverConstructor ? options.driverConstructor : neo4j.driver,
-      driverConfig: isFunction(options) || !options.driverConfig ? {} : options.driverConfig,
-    };
-
-    this.driver = this.options.driverConstructor(this.url, this.auth, this.options.driverConfig);
+    const driverConstructor = isTrueFunction(options) ? options
+      : options.driverConstructor ? options.driverConstructor : neo4j.driver;
+    const driverConfig = isTrueFunction(options) || !options.driverConfig
+      ? {} : options.driverConfig;
+    this.options = { driverConstructor, driverConfig };
+    this.driver = driverConstructor(this.url, this.auth, this.options.driverConfig);
     this.open = true;
-
     connections.push(this);
   }
 
@@ -138,7 +168,7 @@ export class Connection extends Builder<Query> {
    * new chainable query for you.
    * @return {Query}
    */
-  query() {
+  query(): Query {
     return new Query(this);
   }
 
@@ -198,18 +228,27 @@ export class Connection extends Builder<Query> {
    */
   run<R = any>(query: Query): Promise<Dictionary<R>[]> {
     if (!this.open) {
-      throw Error('Cannot run query; connection is not open.');
+      return AnyPromise.reject(
+        new Error('Cannot run query; connection is not open.'),
+      ) as Promise<Dictionary<R>[]>;
     }
 
     if (query.getClauses().length === 0) {
-      throw Error('Cannot run query: no clauses attached to the query.');
+      return AnyPromise.reject(
+        new Error('Cannot run query: no clauses attached to the query.'),
+      ) as Promise<Dictionary<R>[]>;
+    }
+
+    const session = this.session();
+    if (!session) {
+      throw Error('Cannot run query: connection is not open.');
     }
 
     const queryObj = query.buildQueryObject();
-    const session = this.session();
+    const result = session.run(queryObj.query, queryObj.params);
 
     // Need to wrap promise in an any-promise
-    return Promise.resolve(session.run(queryObj.query, queryObj.params))
+    return AnyPromise.resolve(result)
       .then((result) => {
         session.close();
         return this.transformer.transformRecords<R>(result.records);
@@ -217,7 +256,7 @@ export class Connection extends Builder<Query> {
       .catch((error) => {
         session.close();
         return Promise.reject(error);
-      });
+      }) as Promise<Dictionary<R>[]>;
   }
 
   /**
@@ -288,22 +327,27 @@ export class Connection extends Builder<Query> {
    * In practice this should never happen unless you're doing some strange things.
    */
   stream<R = any>(query: Query): Observable<Dictionary<R>> {
-    if (!this.open) {
-      throw Error('Cannot run query; connection is not open.');
-    }
-
-    if (query.getClauses().length === 0) {
-      throw Error('Cannot run query: no clauses attached to the query.');
-    }
-
-    const queryObj = query.buildQueryObject();
-    const session = this.session();
-
-    // Run the query
-    const result = session.run(queryObj.query, queryObj.params);
-
-    // Subscribe to the result and clean up the session
     return new Observable((subscriber: Observer<Dictionary<R>>): void => {
+      if (!this.open) {
+        subscriber.error(new Error('Cannot run query; connection is not open.'));
+        return;
+      }
+
+      if (query.getClauses().length === 0) {
+        subscriber.error(Error('Cannot run query: no clauses attached to the query.'));
+        return;
+      }
+
+      const session = this.session();
+      if (!session) {
+        throw Error('Cannot run query: connection is not open.');
+      }
+
+      // Run the query
+      const queryObj = query.buildQueryObject();
+      const result = session.run(queryObj.query, queryObj.params);
+
+      // Subscribe to the result and clean up the session
       // Note: Neo4j observables use a different subscribe syntax to RxJS observables
       result.subscribe({
         onNext: (record) => {

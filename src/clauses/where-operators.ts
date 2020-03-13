@@ -1,15 +1,17 @@
 import {
+  AndConditions,
+  AnyConditions,
+  combineAnd,
+  combineNot,
+  combineOr,
+  combineXor,
+  OrConditions,
   Precedence,
-  combineAnd, combineNot, combineXor, combineOr, AndConditions,
-  OrConditions, AnyConditions,
+  WhereOp,
 } from './where-utils';
 import { ParameterBag } from '../parameter-bag';
 
 export const operators = { and, or, xor, not };
-
-export abstract class WhereOp {
-  abstract evaluate(params: ParameterBag, precedence?: Precedence, name?: string): string;
-}
 
 /**
  * `AND` operator to use in where clauses. This is the default operator when
@@ -37,7 +39,7 @@ export class WhereAnd extends WhereOp {
     super();
   }
 
-  evaluate(params, precedence = Precedence.None, name = '') {
+  evaluate(params: ParameterBag, precedence = Precedence.None, name = '') {
     return combineAnd(params, this.conditions, precedence, name);
   }
 }
@@ -68,7 +70,7 @@ export class WhereOr extends WhereOp {
     super();
   }
 
-  evaluate(params, precedence = Precedence.None, name = '') {
+  evaluate(params: ParameterBag, precedence = Precedence.None, name = '') {
     return combineOr(params, this.conditions, precedence, name);
   }
 }
@@ -97,7 +99,7 @@ export class WhereXor extends WhereOp {
     super();
   }
 
-  evaluate(params, precedence = Precedence.None, name = '') {
+  evaluate(params: ParameterBag, precedence = Precedence.None, name = '') {
     return combineXor(params, this.conditions, precedence, name);
   }
 }
@@ -126,7 +128,7 @@ export class WhereNot extends WhereOp {
     super();
   }
 
-  evaluate(params, precedence = Precedence.None, name = '') {
+  evaluate(params: ParameterBag, precedence = Precedence.None, name = '') {
     return combineNot(params, this.conditions, precedence, name);
   }
 }

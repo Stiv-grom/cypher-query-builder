@@ -1,5 +1,5 @@
+import { map } from 'lodash';
 import { Clause } from './clause';
-import { join, map } from 'lodash';
 
 export class ClauseCollection extends Clause {
   protected clauses: Clause[] = [];
@@ -8,7 +8,7 @@ export class ClauseCollection extends Clause {
    * Returns all clauses in this collection.
    * @returns {Clause[]}
    */
-  getClauses() {
+  getClauses(): Clause[] {
     return this.clauses;
   }
 
@@ -16,7 +16,7 @@ export class ClauseCollection extends Clause {
    * Adds a clause to the child list.
    * @param {Clause} clause
    */
-  addClause(clause) {
+  addClause(clause: Clause) {
     clause.useParameterBag(this.parameterBag);
     this.clauses.push(clause);
   }
@@ -25,6 +25,6 @@ export class ClauseCollection extends Clause {
    * @inheritDoc
    */
   build() {
-    return join(map(this.clauses, s => s.build()), '\n') + ';';
+    return `${map(this.clauses, s => s.build()).join('\n')};`;
   }
 }

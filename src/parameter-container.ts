@@ -1,13 +1,15 @@
 import { Parameter, ParameterBag } from './parameter-bag';
+import { Dictionary } from 'lodash';
+
 export class ParameterContainer {
   protected parameterBag = new ParameterBag();
 
-  useParameterBag(newBag) {
+  useParameterBag(newBag: ParameterBag) {
     newBag.importParams(this.parameterBag);
     this.parameterBag = newBag;
   }
 
-  getParams() {
+  getParams(): Dictionary<any> {
     return this.parameterBag.getParams();
   }
 

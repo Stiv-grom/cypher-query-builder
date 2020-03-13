@@ -2,25 +2,25 @@
   "compileOnSave": false,
   "compilerOptions": {
     "allowJs": false,
-    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "lib": [
+      "es2016",
+      "dom"
+    ],
+    "module": "commonjs",
     "moduleResolution": "node",
     "outDir": "dist",
+    "sourceMap": true,
+    "strict": true,
     "target": "es5",
-    "module": "commonjs",
-    "alwaysStrict": true,
-    "noImplicitAny": false,
-    "noImplicitThis": false,
-    "strictNullChecks": false,
-    "suppressImplicitAnyIndexErrors": true,
-    "lib": [
-      "es2016"
+    "typeRoots": [
+      "node_modules/@types",
+      "typings"
     ]
   },
-  "include": [
-    "src/**/*.ts"
-  ],
   "exclude": [
-    "**/*.test.ts",
-    "**/*.spec.ts"
+    "node_modules",
+    "dist"
   ]
 }

@@ -1,6 +1,5 @@
-import { join, Many, last, split, capitalize } from 'lodash';
+import { last, capitalize } from 'lodash';
 import { ParameterBag } from '../parameter-bag';
-import { combineAnd } from './where-utils';
 
 export const comparisions = {
   equals,
@@ -23,13 +22,13 @@ export type Comparator = (params: ParameterBag, name: string) => string;
 
 function compare(operator: string, value: any, variable?: boolean, paramName?: string): Comparator {
   return (params: ParameterBag, name: string): string => {
-    const baseParamName = paramName || last(split(name, '.'));
+    const baseParamName = paramName || last(name.split('.'));
     const parts = [
       name,
       operator,
       variable ? value : params.addParam(value, baseParamName),
     ];
-    return join(parts, ' ');
+    return parts.join(' ');
   };
 }
 
@@ -230,9 +229,13 @@ export function inArray(value: any[], variable?: boolean) {
  * to true because it will prepend `'(?i)'` which will make your regexp
  * malformed.
  *
- * The regexp syntax is inherited from the
- * [java regexp syntax]{@link
- * https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html}.
+ * For convenience you can also pass a Javascript RegExp object into this
+ * comparator, which will then be converted into a string before it is
+ * passed to cypher. *However*, beware that the cypher regexp syntax is
+ * inherited from [java]{@link
+ * https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html},
+ * and may have slight differences to the Javascript syntax. For example,
+ * Javascript RegExp flags will not be preserved when sent to cypher.
  *
  * If you want to compare against a Neo4j variable you can set `variable` to
  * true and the value will be inserted literally into the query.
@@ -241,7 +244,10 @@ export function inArray(value: any[], variable?: boolean) {
  * query.where({ name: regexp('s.*e') })
  * // WHERE name =~ 's.*e'
  *
- * query.where({ name: regexp('clientPattern', true) })
+ * query.where({ name: regexp('s.*e', true) })
+ * // WHERE name =~ '(?i)s.*e'
+ *
+ * query.where({ name: regexp('clientPattern', false, true) })
  * // WHERE name =~ clientPattern
  * ```
  * @param exp
@@ -249,8 +255,15 @@ export function inArray(value: any[], variable?: boolean) {
  * @param {boolean} variable
  * @returns {Comparator}
  */
-export function regexp(exp: string, insensitive?: boolean, variable?: boolean) {
-  return compare('=~', insensitive ? '(?i)' + exp : exp, variable);
+export function regexp(exp: string | RegExp, insensitive?: boolean, variable?: boolean) {
+  let stringExp = exp;
+  if (exp instanceof RegExp) {
+    // Convert regular expression to string and strip slashes and trailing flags.
+    // This regular expression will always match something so we can use the ! operator to ignore
+    // type errors.
+    stringExp = exp.toString().match(/\/(.*)\/[a-z]*/)![1];
+  }
+  return compare('=~', insensitive ? `(?i)${stringExp}` : stringExp, variable);
 }
 
 /**
@@ -298,8 +311,8 @@ export function between(
   const upperOp = upperInclusive ? '<=' : '<';
   return (params: ParameterBag, name) => {
     const paramName = capitalize(name);
-    const lowerComparator = compare(lowerOp, lower, variables, 'lower' + paramName);
-    const upperComparator = compare(upperOp, upper, variables, 'upper' + paramName);
+    const lowerComparator = compare(lowerOp, lower, variables, `lower${paramName}`);
+    const upperComparator = compare(upperOp, upper, variables, `upper${paramName}`);
 
     const lowerConstraint = lowerComparator(params, name);
     const upperConstraint = upperComparator(params, name);
@@ -318,7 +331,7 @@ export function between(
  * @returns {Comparator}
  */
 export function isNull(): Comparator {
-  return (params, name) => name + ' IS NULL';
+  return (params, name) => `${name} IS NULL`;
 }
 
 /**
@@ -332,7 +345,7 @@ export function isNull(): Comparator {
  * @returns {Comparator}
  */
 export function hasLabel(label: string): Comparator {
-  return (params, name) => name + ':' + label;
+  return (params, name) => `${name}:${label}`;
 }
 
 /**
